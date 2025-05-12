@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-public class Task
+public class MyTask
 {
     [JsonPropertyName("id")]
     public Guid Id { get; set; }
@@ -17,7 +17,7 @@ public class Task
     [JsonPropertyName("updatedAt")]
     public DateTime UpdatedAt { get; set; }
 
-    public Task()
+    public MyTask()
     {
         Id = Guid.NewGuid();
         CreatedAt = DateTime.Now;

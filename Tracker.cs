@@ -1,12 +1,15 @@
-﻿using System.Text.Json;
+﻿using System.Runtime.InteropServices;
+using System.Text.Json;
 
 public class Tracker
 {
     private readonly string tasksFilePath;
+    private List<MyTask> tasks;
 
     public Tracker()
     {
         tasksFilePath = Path.Combine(Directory.GetCurrentDirectory(), "mytasks.json");
+        tasks = new List<MyTask>();
     }
 
     private bool Initialize()
@@ -16,20 +19,46 @@ public class Tracker
             if (!File.Exists(tasksFilePath))
             {
                 File.Create(tasksFilePath).Close();
-                Console.WriteLine($"Created mytasks.json at: {tasksFilePath}");
+                //PrintSuccessMessage("Tasks file created successfully.");
+            }
+            else
+            {
+                if (new FileInfo(tasksFilePath).Length > 0)
+                {
+                    string json = File.ReadAllText(tasksFilePath);
+                    tasks = JsonSerializer.Deserialize<List<MyTask>>(json) ?? new List<MyTask>();
+                }
             }
 
             return true;
         }
         catch (Exception ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"An error occurred while initializing Task Tracker:");
-            Console.WriteLine($"Error: {ex.Message}");
-            Console.ResetColor();
+            PrintErrorMessage($"Error initializing tasks: {ex.Message}");
             return false;
         }
-    }    
+    }
+
+    private void PrintSuccessMessage(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine(message);
+        Console.ResetColor();
+    }
+
+    private void PrintErrorMessage(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine(message);
+        Console.ResetColor();
+    }
+
+    private void PrintQuestion(string message)
+    {
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine(message);
+        Console.ResetColor();
+    }      
     
     public void Run()
     {
@@ -55,23 +84,125 @@ public class Tracker
                     Console.WriteLine("Goodbye!");
                     return;
                 case "add":
-                    // TODO: Implement add task
-                    Console.WriteLine("Adding task...");
+                    try
+                    {
+                        string? description;
+
+                        if (command.Length > 4 && command.StartsWith("add "))
+                        {
+                            description = command.Substring(4).Trim('\'', '"');
+                        }
+                        else
+                        {
+                            PrintQuestion("Enter task description: ");
+                            description = Console.ReadLine();
+                        }
+
+                        var newTask = new MyTask
+                        {
+                            Description = description ?? "no description given",
+                        };
+
+                        tasks.Add(newTask);
+                        string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                        File.WriteAllText(tasksFilePath, updatedJson);
+                        PrintSuccessMessage("Task added successfully!");
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintErrorMessage($"Error adding task: {ex.Message}");
+                    }
                     break;
                 case "list":
-                    // TODO: Implement list tasks
-                    Console.WriteLine("Listing tasks...");
+                    try
+                    {
+                        if (tasks.Count == 0)
+                        {
+                            PrintSuccessMessage("No current tasks.");
+                            break;
+                        }
+
+                        for (int i = 0; i < tasks.Count; i++)
+                        {
+                            Console.WriteLine($"{i + 1}. {tasks[i].Description}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintErrorMessage($"Error listing tasks: {ex.Message}");
+                    }
                     break;
                 case "update":
-                    // TODO: Implement update task
-                    Console.WriteLine("Updating task...");
+                    try
+                    {
+                        if (tasks.Count == 0)
+                        {
+                           PrintSuccessMessage("No tasks to update.");
+                            break;
+                        }
+                        
+                        Console.WriteLine("Current tasks:");
+                        for (int i = 0; i < tasks.Count; i++)
+                        {
+                            Console.WriteLine($"{i + 1}. {tasks[i].Description}");
+                        }
+
+                        PrintQuestion("Enter task number to update: ");
+                        if (int.TryParse(Console.ReadLine(), out int taskNum) && taskNum > 0 && taskNum <= tasks.Count)
+                        {
+                            PrintQuestion("Enter new description: ");
+                            string? newDescription = Console.ReadLine();
+                            tasks[taskNum - 1].Description = newDescription ?? tasks[taskNum - 1].Description;
+                            
+                            string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                            File.WriteAllText(tasksFilePath, updatedJson);
+                            PrintSuccessMessage("Task updated successfully!");
+                        }
+                        else
+                        {
+                            PrintErrorMessage("Invalid task number.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintErrorMessage($"Error updating task: {ex.Message}");
+                    }
                     break;
                 case "delete":
-                    // TODO: Implement delete task
-                    Console.WriteLine("Deleting task...");
+                    try
+                    {
+                        if (tasks.Count == 0)
+                        {
+                            PrintSuccessMessage("No tasks to delete.");
+                            break;
+                        }
+
+                        Console.WriteLine("Current tasks:");
+                        for (int i = 0; i < tasks.Count; i++)
+                        {
+                            Console.WriteLine($"{i + 1}. {tasks[i].Description}");
+                        }
+
+                        PrintQuestion("Enter task number to delete: ");
+                        if (int.TryParse(Console.ReadLine(), out int deleteNum) && deleteNum > 0 && deleteNum <= tasks.Count)
+                        {
+                            tasks.RemoveAt(deleteNum - 1);
+                            string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                            File.WriteAllText(tasksFilePath, updatedJson);
+                            PrintSuccessMessage("Task deleted successfully!");
+                        }
+                        else
+                        {
+                            PrintErrorMessage("Invalid task number.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        PrintErrorMessage($"Error deleting task: {ex.Message}");
+                    }
                     break;
                 default:
-                    Console.WriteLine("Unknown command. Please try again.");
+                    PrintErrorMessage("Unknown command. Please try again.");
                     break;
             }
         }
