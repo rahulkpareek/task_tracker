@@ -100,7 +100,7 @@ public class Tracker
 
                         var newTask = new MyTask
                         {
-                            Description = description ?? "no description given",
+                            Description = string.IsNullOrWhiteSpace(description) ? "no description given" : description,
                         };
 
                         tasks.Add(newTask);
@@ -147,20 +147,42 @@ public class Tracker
                             Console.WriteLine($"{i + 1}. {tasks[i].Description}");
                         }
 
-                        PrintQuestion("Enter task number to update: ");
-                        if (int.TryParse(Console.ReadLine(), out int taskNum) && taskNum > 0 && taskNum <= tasks.Count)
+                        string[] parts = command.Split(' ', 3);
+                        if (parts.Length >= 3)
                         {
-                            PrintQuestion("Enter new description: ");
-                            string? newDescription = Console.ReadLine();
-                            tasks[taskNum - 1].Description = newDescription ?? tasks[taskNum - 1].Description;
-                            
-                            string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
-                            File.WriteAllText(tasksFilePath, updatedJson);
-                            PrintSuccessMessage("Task updated successfully!");
+                            // Handle command line update: "update <number> <description>"
+                            if (int.TryParse(parts[1], out int taskNum) && taskNum > 0 && taskNum <= tasks.Count)
+                            {
+                                string newDescription = parts[2].Trim('\'', '"');
+                                tasks[taskNum - 1].Description = newDescription;
+                                
+                                string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                                File.WriteAllText(tasksFilePath, updatedJson);
+                                PrintSuccessMessage("Task updated successfully!");
+                            }
+                            else
+                            {
+                                PrintErrorMessage("Invalid task number.");
+                            }
                         }
                         else
                         {
-                            PrintErrorMessage("Invalid task number.");
+                            // Interactive update
+                            PrintQuestion("Enter task number to update: ");
+                            if (int.TryParse(Console.ReadLine(), out int taskNum) && taskNum > 0 && taskNum <= tasks.Count)
+                            {
+                                PrintQuestion("Enter new description: ");
+                                string? newDescription = Console.ReadLine();
+                                tasks[taskNum - 1].Description = newDescription ?? tasks[taskNum - 1].Description;
+                                
+                                string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                                File.WriteAllText(tasksFilePath, updatedJson);
+                                PrintSuccessMessage("Task updated successfully!");
+                            }
+                            else
+                            {
+                                PrintErrorMessage("Invalid task number.");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -183,17 +205,37 @@ public class Tracker
                             Console.WriteLine($"{i + 1}. {tasks[i].Description}");
                         }
 
-                        PrintQuestion("Enter task number to delete: ");
-                        if (int.TryParse(Console.ReadLine(), out int deleteNum) && deleteNum > 0 && deleteNum <= tasks.Count)
+                        string[] parts = command.Split(' ', 2);
+                        if (parts.Length == 2)
                         {
-                            tasks.RemoveAt(deleteNum - 1);
-                            string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
-                            File.WriteAllText(tasksFilePath, updatedJson);
-                            PrintSuccessMessage("Task deleted successfully!");
+                            // Handle command line delete: "delete <number>"
+                            if (int.TryParse(parts[1], out int deleteNum) && deleteNum > 0 && deleteNum <= tasks.Count)
+                            {
+                                tasks.RemoveAt(deleteNum - 1);
+                                string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                                File.WriteAllText(tasksFilePath, updatedJson);
+                                PrintSuccessMessage("Task deleted successfully!");
+                            }
+                            else
+                            {
+                                PrintErrorMessage("Invalid task number.");
+                            }
                         }
                         else
                         {
-                            PrintErrorMessage("Invalid task number.");
+                            // Interactive delete
+                            PrintQuestion("Enter task number to delete: ");
+                            if (int.TryParse(Console.ReadLine(), out int deleteNum) && deleteNum > 0 && deleteNum <= tasks.Count)
+                            {
+                                tasks.RemoveAt(deleteNum - 1);
+                                string updatedJson = JsonSerializer.Serialize(tasks, new JsonSerializerOptions { WriteIndented = true });
+                                File.WriteAllText(tasksFilePath, updatedJson);
+                                PrintSuccessMessage("Task deleted successfully!");
+                            }
+                            else
+                            {
+                                PrintErrorMessage("Invalid task number.");
+                            }
                         }
                     }
                     catch (Exception ex)
@@ -226,8 +268,10 @@ public class Tracker
     {
         Console.WriteLine("\nAvailable commands:");
         Console.WriteLine("  add     - Add a new task");
+        Console.WriteLine("  add <description> - Add a new task with a specific description");
         Console.WriteLine("  list    - List all tasks");
         Console.WriteLine("  update  - Update a task");
+        Console.WriteLine("  update <number> <description> - Update a task with a specific number");    
         Console.WriteLine("  delete  - Delete a task");
         Console.WriteLine("  exit    - Exit the application");
         Console.Write("\nEnter command: ");
