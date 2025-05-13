@@ -73,12 +73,15 @@ public class Tracker
 
         while (true)
         {
+            Console.Write("\nEnter command: ");
             string? command = Console.ReadLine()?.Trim().ToLower();
 
             if (string.IsNullOrEmpty(command))
                 continue;
 
-            switch (command)
+            string input = command.Split(' ')[0];
+
+            switch (input)
             {
                 case "exit":
                     Console.WriteLine("Goodbye!");
@@ -243,8 +246,12 @@ public class Tracker
                         PrintErrorMessage($"Error deleting task: {ex.Message}");
                     }
                     break;
+                case "help":
+                    DisplayHelp();
+                    break;
                 default:
-                    PrintErrorMessage("Unknown command. Please try again.");
+                    PrintErrorMessage("\nUnknown command. Please try again.\n");
+                    DisplayHelp();
                     break;
             }
         }
@@ -273,8 +280,9 @@ public class Tracker
         Console.WriteLine("  update  - Update a task");
         Console.WriteLine("  update <number> <description> - Update a task with a specific number");    
         Console.WriteLine("  delete  - Delete a task");
+        Console.WriteLine("  delete <number> - Delete a task with a specific number");
         Console.WriteLine("  exit    - Exit the application");
-        Console.Write("\nEnter command: ");
+        Console.WriteLine("  help    - Display this help message");
     }
 }
 
